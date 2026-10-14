@@ -102,7 +102,9 @@ dialog::backdrop{background:rgba(15,23,42,.55);backdrop-filter:blur(2px)}
   <form id="f">
     <h3 id="dt" style="margin:0"></h3>
     <p class="mu" id="ds"></p>
-    <input id="qty" type="number" min="1" inputmode="numeric" placeholder="Quantity" required>
+    <select id="mode" style="font:inherit;width:100%;padding:11px;margin:6px 0;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx)">
+      <option value="add">➕ Add to total</option><option value="sub">➖ Subtract from total</option><option value="set">🎯 Set exact total</option></select>
+    <input id="qty" type="number" min="0" inputmode="numeric" placeholder="Quantity to add" required>
     <input id="note" placeholder="Note (optional, e.g. delivered by ...)">
     <div class="row"><button type="button" id="cx">Cancel</button><button class="p" type="submit">💾 Save</button></div>
   </form>
@@ -365,20 +367,26 @@ $("#list").onclick = async e => {
   $("#dt").textContent = (d.rec ? "📦 Received: " : "🎒 Distributed: ") + b.title;
   $("#ds").textContent = `${b.cls} · received ${b.received}/${b.expected} · in stock ${b.received - b.distributed}`;
   $("#qty").value = ""; $("#note").value = "";
+  $("#mode").value = "add"; $("#mode").hidden = !isAdmin(); $("#qty").placeholder = "Quantity to add";
   $("#dlg").showModal();
 };
+$("#mode").onchange = () => $("#qty").placeholder = {add: "Quantity to add", sub: "Quantity to subtract", set: "New exact total"}[$("#mode").value];
 $("#cx").onclick = () => $("#dlg").close();
 
 $("#f").onsubmit = async e => {
   e.preventDefault();
-  const {b, type} = pending, qty = parseInt($("#qty").value, 10);
-  if (!(qty > 0)) return;
-  if (type === "distributed" && qty > b.received - b.distributed) return alert(`Only ${b.received - b.distributed} in stock.`);
-  if (type === "received" && b.received + qty > b.expected && !confirm("This is more than expected. Save anyway?")) return;
+  const {b, type} = pending, n = parseInt($("#qty").value, 10), mode = isAdmin() ? $("#mode").value : "add";
+  if (!(n >= 0) || (mode !== "set" && n < 1)) return alert("Enter a valid number.");
+  const cur = b[type], qty = mode === "add" ? n : mode === "sub" ? -n : n - cur, next = cur + qty;
+  if (qty === 0) return $("#dlg").close();
+  if (next < 0) return alert("That would go below zero.");
+  if (type === "received" && next < b.distributed) return alert(`${b.distributed} already distributed, so received can't be lower than that.`);
+  if (type === "distributed" && next > b.received) return alert(`Only ${b.received} received so far.`);
+  if (type === "received" && next > b.expected && !confirm("This is more than expected. Save anyway?")) return;
   try {
     const batch = writeBatch(db);
     batch.set(doc(collection(db, "entries")), {bookId: b.id, cls: b.cls, title: b.title, type, qty,
-      note: $("#note").value.trim(), by: user.email, at: serverTimestamp()});
+      note: ($("#note").value.trim() + (mode === "set" ? ` (set to ${next})` : mode === "sub" ? " (correction)" : "")).trim(), by: user.email, at: serverTimestamp()});
     batch.update(doc(db, "books", b.id), {[type]: increment(qty)});
     await batch.commit();
     $("#dlg").close();
