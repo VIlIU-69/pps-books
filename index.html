@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#1d4ed8">
+<title>School Textbooks Inventory</title>
+<style>
+:root{--bg:#f3f5f9;--card:#fff;--tx:#0f172a;--mu:#64748b;--bd:#e2e8f0;--ac:#2563eb;--pb:#2563eb;--ok:#059669;--wr:#d97706;--bad:#dc2626;--vi:#7c3aed;--sh:0 1px 2px rgba(15,23,42,.06),0 6px 16px rgba(15,23,42,.06)}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1020;--card:#141a2e;--tx:#e8ecf6;--mu:#94a3b8;--bd:#25304d;--ac:#60a5fa;--ok:#34d399;--wr:#fbbf24;--bad:#f87171;--vi:#a78bfa;--sh:0 1px 2px rgba(0,0,0,.4),0 8px 20px rgba(0,0,0,.35)}}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.45 -apple-system,"Segoe UI",Roboto,system-ui,sans-serif;background:var(--bg);color:var(--tx);padding-bottom:60px;-webkit-font-smoothing:antialiased}
+header{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;position:sticky;top:0;z-index:5;color:#fff;background:linear-gradient(135deg,#0f2a5f,#1d4ed8);box-shadow:0 2px 12px rgba(15,23,42,.25)}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.logo{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.16);display:grid;place-items:center;flex:none}
+h1{font-size:16px;font-weight:700;letter-spacing:.2px;margin:0}
+header .mu{color:rgba(255,255,255,.78);font-size:12px}
+header button{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.35)}
+.mu{color:var(--mu);font-size:12px}
+button{font:inherit;font-weight:600;border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:9px 14px;border-radius:10px;cursor:pointer;transition:transform .08s,box-shadow .15s,background .15s}
+button:hover{box-shadow:var(--sh)}button:active{transform:scale(.97)}
+button:disabled{opacity:.55;cursor:default;box-shadow:none}
+button.p{background:var(--pb);color:#fff;border-color:var(--pb)}
+button.s{padding:7px 12px;font-size:13px}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+main{padding:16px;max-width:820px;margin:auto}
+#sum{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.c{background:var(--card);border:1px solid var(--bd);border-top:3px solid var(--ac);border-radius:12px;padding:12px 6px;text-align:center;box-shadow:var(--sh)}
+.c:nth-child(2){border-top-color:var(--ok)}.c:nth-child(3){border-top-color:var(--vi)}.c:nth-child(4){border-top-color:var(--wr)}
+.c b{display:block;font-size:21px;font-weight:700;font-variant-numeric:tabular-nums}
+.c span{font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.5px}
+#chips{display:flex;gap:6px;overflow-x:auto;padding:14px 0 10px;scrollbar-width:none}
+#chips button{white-space:nowrap;padding:6px 14px;border-radius:99px;font-size:13px}
+#chips button.on{background:var(--pb);color:#fff;border-color:var(--pb)}
+input{font:inherit;width:100%;padding:11px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);margin:6px 0}
+.b{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-top:12px;box-shadow:var(--sh)}
+.b h3{margin:0 0 6px;font-size:15px;font-weight:700;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.bar{height:8px;background:var(--bd);border-radius:9px;margin:5px 0 8px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:9px;transition:width .4s}
+.n{display:flex;justify-content:space-between;font-size:13px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--bd)}
+.row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.tag{font-size:11px;font-weight:600;padding:2px 9px;border-radius:99px;border:1px solid var(--bd);color:var(--mu);background:var(--bg)}
+details{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px 14px;margin-top:16px;box-shadow:var(--sh)}
+summary{font-weight:700;cursor:pointer}
+dialog{border:1px solid var(--bd);border-radius:16px;background:var(--card);color:var(--tx);width:min(92vw,380px);box-shadow:0 20px 50px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(15,23,42,.55);backdrop-filter:blur(2px)}
+.li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bd);font-size:13px}
+@media(max-width:420px){#sum{grid-template-columns:repeat(2,1fr)}}
+#printArea{display:none}#printArea table{width:100%;border-collapse:collapse;margin-bottom:14px}#printArea td,#printArea th{border:1px solid #888;padding:4px;text-align:right;font-size:12px}
+@media print{body>*:not(#printArea){display:none!important}#printArea{display:block}body{background:#fff;color:#000}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20"/></svg></div>
+  <div><h1>School Textbooks Inventory</h1><div class="mu" id="who"></div></div></div>
+  <button class="s" id="auth">Sign in</button>
+</header>
+<main>
+  <div id="reqs"></div>
+  <div id="sum"></div>
+  <div id="chips"></div>
+  <div class="row" style="margin:0 0 6px;align-items:center"><button class="s" id="fs">Shortfall</button><button class="s" id="fl">Low stock</button>
+    <span class="mu">low = at most</span><input id="th" type="number" value="10" style="width:64px;padding:5px;margin:0"><button class="s" id="pr">Print report</button></div>
+  <div class="row" style="margin:0"><input id="q" type="search" placeholder="Search book title..."><button class="s" id="dl" hidden>Download Excel</button></div>
+  <div id="list"></div>
+
+  <div id="printArea"></div>
+  <details id="activity"><summary>Recent activity</summary><div id="act"></div></details>
+
+  <details id="admin" hidden><summary>Admin tools</summary>
+    <p class="mu">Import books from your Excel sheet (Inventory sheet: Class, Book, Expected, Received, Distributed). This replaces the current totals.</p>
+    <input type="file" id="xl" accept=".xlsx">
+    <p class="mu" style="margin-top:14px">Add a class or book:</p>
+    <input id="nc" placeholder="Class (e.g. N1)"><input id="nb" placeholder="Book title"><input id="ne" type="number" min="0" placeholder="Expected quantity">
+    <button class="s" id="addBook">Add book</button>
+    <label style="display:block;margin-top:14px"><input type="checkbox" id="priv" style="width:auto;margin:0 6px 0 0">Private mode: only you and approved staff can view</label>
+    <p class="mu" style="margin-top:14px">Approved staff (can record entries):</p>
+    <input id="se" type="email" placeholder="staff email (Google account)">
+    <button class="s" id="addStaff">Approve staff</button>
+    <div id="staff"></div>
+  </details>
+</main>
+
+<dialog id="dlg">
+  <form id="f">
+    <h3 id="dt" style="margin:0"></h3>
+    <p class="mu" id="ds"></p>
+    <input id="qty" type="number" min="1" inputmode="numeric" placeholder="Quantity" required>
+    <input id="note" placeholder="Note (optional, e.g. delivered by ...)">
+    <div class="row"><button type="button" id="cx">Cancel</button><button class="p" type="submit">Save</button></div>
+  </form>
+</dialog>
+
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getFirestore,collection,doc,getDoc,setDoc,deleteDoc,updateDoc,onSnapshot,writeBatch,increment,serverTimestamp,query,orderBy,limit,addDoc,where}
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut}
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+/* ---------- 1. CONNECT TO YOUR FIREBASE PROJECT ---------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyCojSnfBfzLq3i29wjQN9V8iGTz5_fHZ5o",
+  authDomain: "school-textbooks-invento-86342.firebaseapp.com",
+  projectId: "school-textbooks-invento-86342",
+  storageBucket: "school-textbooks-invento-86342.firebasestorage.app",
+  messagingSenderId: "385053275906",
+  appId: "1:385053275906:web:3664716e03e2f9e242f41b"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+/* ---------- 2. STATE + HELPERS ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let user = null, role = "viewer", books = [], entries = [], staff = [], cls = "All", search = "", pending = null;
+let flt = "", priv = false, unsubStaff = null, unsubReq = null, reqs = [], mine = null;
+const canEdit = () => role !== "viewer";
+const isAdmin = () => role === "admin";
+
+/* ---------- 3. LOGIN + ROLES ---------- */
+$("#auth").onclick = async () => {
+  if (user) return signOut(auth);
+  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+  catch (e) { alert("Sign-in failed: " + e.message); }
+};
+
+onAuthStateChanged(auth, async u => {
+  user = u; role = "viewer";
+  if (unsubStaff) { unsubStaff(); unsubStaff = null; }
+  if (unsubReq) { unsubReq(); unsubReq = null; }
+  staff = []; reqs = []; mine = null;
+  document.title = "School Textbooks Inventory";
+  if (u) {
+    const em = u.email.toLowerCase();
+    try {
+      const a = await getDoc(doc(db, "config", "admin"));
+      if (a.exists() && (a.data().email || "").toLowerCase() === em) role = "admin";
+    } catch (e) {}
+    if (role === "viewer") {
+      try { if ((await getDoc(doc(db, "staff", em))).exists()) role = "staff"; } catch (e) {}
+    }
+    if (role === "admin") {
+      unsubStaff = onSnapshot(collection(db, "staff"), s => { staff = s.docs.map(d => d.id); render(); });
+      // Live alert when staff ask to download
+      unsubReq = onSnapshot(query(collection(db, "downloadRequests"), where("status", "==", "pending")), s => {
+        if (s.size > reqs.length && navigator.vibrate) navigator.vibrate(300);
+        reqs = s.docs.map(d => ({id: d.id, ...d.data()}));
+        document.title = (reqs.length ? `(${reqs.length}) ` : "") + "School Textbooks Inventory";
+        render();
+      });
+    } else if (role === "staff") {
+      unsubReq = onSnapshot(query(collection(db, "downloadRequests"), where("email", "==", em)), s => {
+        mine = s.docs.map(d => ({id: d.id, ...d.data()}))
+          .sort((a, b) => (b.at?.seconds ?? 9e9) - (a.at?.seconds ?? 9e9))[0] || null;
+        render();
+      });
+    }
+  }
+  subData();
+  render();
+});
+
+/* ---------- 4. LIVE DATA (updates instantly on every phone) ---------- */
+let unsubData = [];
+function subData() {
+  unsubData.forEach(f => f());
+  unsubData = [
+    onSnapshot(collection(db, "books"), s => {
+      books = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      render();
+    }, () => { books = []; render(); }),
+    onSnapshot(query(collection(db, "entries"), orderBy("at", "desc"), limit(15)), s => {
+      entries = s.docs.map(d => ({id: d.id, ...d.data()}));
+      render();
+    }, () => { entries = []; render(); })
+  ];
+}
+onSnapshot(doc(db, "config", "settings"), s => { priv = !!(s.data() || {}).private; render(); }, () => {});
+
+/* ---------- 5. SCREEN ---------- */
+function render() {
+  $("#who").textContent = user ? `${user.displayName || user.email} · ${role}` : "View only";
+  $("#auth").textContent = user ? "Sign out" : "Sign in";
+  $("#admin").hidden = !isAdmin();
+
+  const dl = $("#dl"), st = mine?.status;
+  dl.hidden = !canEdit();
+  dl.disabled = !isAdmin() && st === "pending";
+  dl.textContent = isAdmin() ? "Download Excel" : st === "pending" ? "Waiting for approval..."
+    : st === "approved" ? "Download now (approved)" : st === "denied" ? "Denied - request again" : "Request download";
+  $("#reqs").innerHTML = isAdmin() ? reqs.map(r => `<div class="b" style="border-color:var(--ac)"><b>Download request</b>
+    <div class="mu">${esc(r.name)} (${esc(r.email)}) wants to download the Excel file.</div>
+    <div class="row"><button class="s p" data-allow="${r.id}">Allow</button><button class="s" data-deny="${r.id}">Deny</button></div></div>`).join("") : "";
+
+  const T = books.reduce((a, b) => ({e: a.e + b.expected, r: a.r + b.received, d: a.d + b.distributed}), {e: 0, r: 0, d: 0});
+  $("#sum").innerHTML = [["Expected", T.e], ["Received", T.r], ["Distributed", T.d], ["In stock", T.r - T.d]]
+    .map(([k, v]) => `<div class="c"><b>${v}</b><span>${k}</span></div>`).join("");
+
+  const classes = ["All", ...new Set(books.map(b => b.cls))];
+  $("#chips").innerHTML = classes.map(c => `<button data-c="${esc(c)}" class="${c === cls ? "on" : ""}">${esc(c)}</button>`).join("");
+
+  $("#fs").className = "s" + (flt === "short" ? " p" : ""); $("#fl").className = "s" + (flt === "low" ? " p" : "");
+  $("#priv").checked = priv;
+  const th = +$("#th").value || 0;
+  const shown = books.filter(b => (cls === "All" || b.cls === cls) && b.title.toLowerCase().includes(search) &&
+    (flt !== "short" || b.received < b.expected) && (flt !== "low" || (b.received - b.distributed > 0 && b.received - b.distributed <= th)));
+  $("#list").innerHTML = shown.length ? shown.map(card).join("") :
+    `<p class="mu">${books.length ? "No books match." : priv && !canEdit() ? "This system is private. Sign in with an approved account to view." : "No books yet. Sign in as admin and import your Excel sheet."}</p>`;
+
+  $("#act").innerHTML = entries.map(e => `<div class="li"><span>${esc(e.cls)} · ${esc(e.title)}<br>
+    <span class="mu">${e.type} ${e.qty} · ${esc(e.by || "")} ${e.note ? "· " + esc(e.note) : ""}</span></span>
+    ${isAdmin() ? `<button class="s" data-undo="${e.id}">Undo</button>` : ""}</div>`).join("") || `<p class="mu">Nothing recorded yet.</p>`;
+
+  $("#staff").innerHTML = staff.map(s => `<div class="li"><span>${esc(s)}</span><button class="s" data-rm="${esc(s)}">Remove</button></div>`).join("");
+}
+
+function card(b) {
+  const short = Math.max(b.expected - b.received, 0), stock = b.received - b.distributed;
+  const rp = Math.min(100, b.expected ? b.received / b.expected * 100 : 0);
+  const dp = Math.min(100, b.received ? b.distributed / b.received * 100 : 0);
+  return `<div class="b"><h3>${esc(b.title)} <span class="tag">${esc(b.cls)}</span>
+    ${short ? '<span class="tag" style="color:var(--bad)">Short</span>' : ""}${stock > 0 && stock <= (+$("#th").value || 0) ? '<span class="tag" style="color:var(--wr)">Low</span>' : ""}</h3>
+    <div class="mu">Received ${b.received} of ${b.expected}</div>
+    <div class="bar"><i style="width:${rp}%;background:${short ? "var(--wr)" : "var(--ok)"}"></i></div>
+    <div class="mu">Distributed ${b.distributed} of ${b.received}</div>
+    <div class="bar"><i style="width:${dp}%;background:var(--ac)"></i></div>
+    <div class="n"><span>Shortfall: <b style="color:${short ? "var(--bad)" : "inherit"}">${short}</b></span><span>In stock: <b>${stock}</b></span></div>
+    ${canEdit() ? `<div class="row"><button class="s p" data-rec="${b.id}">+ Received</button>
+      <button class="s" data-dis="${b.id}">+ Distributed</button>
+      ${isAdmin() ? `<button class="s" data-exp="${b.id}">Edit expected</button>` : ""}</div>` : ""}</div>`;
+}
+
+$("#fs").onclick = () => { flt = flt === "short" ? "" : "short"; render(); };
+$("#fl").onclick = () => { flt = flt === "low" ? "" : "low"; render(); };
+$("#th").oninput = render;
+
+$("#addBook").onclick = async () => {
+  const c = $("#nc").value.trim(), t = $("#nb").value.trim(), n = parseInt($("#ne").value, 10);
+  if (!c || !t || !(n >= 0)) return alert("Enter class, book title and expected quantity.");
+  const id = `${c}_${t}`.replace(/[^A-Za-z0-9]+/g, "_");
+  if (books.some(b => b.id === id)) return alert("That book already exists in this class.");
+  try {
+    await setDoc(doc(db, "books", id), {cls: c, title: t, expected: n, received: 0, distributed: 0,
+      order: Math.max(0, ...books.map(b => b.order ?? 0)) + 1});
+    $("#nb").value = ""; $("#ne").value = "";
+  } catch (err) { alert("Not saved: " + err.message); }
+};
+$("#priv").onchange = e => setDoc(doc(db, "config", "settings"), {private: e.target.checked}).catch(x => alert(x.message));
+
+$("#pr").onclick = () => {
+  const head = k => `<tr><th style="text-align:left">${k}</th><th>Expected</th><th>Received</th><th>Shortfall</th><th>Distributed</th><th>In stock</th></tr>`;
+  const tr = (k, l) => {
+    const e = l.reduce((a, b) => a + b.expected, 0), r = l.reduce((a, b) => a + b.received, 0), d = l.reduce((a, b) => a + b.distributed, 0);
+    return `<tr><td style="text-align:left">${esc(k)}</td><td>${e}</td><td>${r}</td><td>${Math.max(e - r, 0)}</td><td>${d}</td><td>${r - d}</td></tr>`;
+  };
+  const cl = [...new Set(books.map(b => b.cls))];
+  $("#printArea").innerHTML = `<h2>School Textbooks Report</h2><p>${new Date().toLocaleDateString()}</p>
+    <table>${head("Class")}${cl.map(c => tr(c, books.filter(b => b.cls === c))).join("")}${tr("TOTAL", books)}</table>
+    <h3>Books with a shortfall</h3><table>${head("Class / Book")}${books.filter(b => b.received < b.expected).map(b => tr(b.cls + " · " + b.title, [b])).join("")}</table>`;
+  window.print();
+};
+
+$("#chips").onclick = e => { const c = e.target.dataset.c; if (c) { cls = c; render(); } };
+$("#q").oninput = e => { search = e.target.value.toLowerCase(); render(); };
+
+/* ---------- 6. RECORD AN ENTRY ---------- */
+$("#list").onclick = async e => {
+  const d = e.target.dataset, id = d.rec || d.dis || d.exp;
+  if (!id) return;
+  const b = books.find(x => x.id === id);
+  if (d.exp) {
+    const v = parseInt(prompt(`Expected quantity for ${b.title} (${b.cls})`, b.expected), 10);
+    if (v >= 0) await updateDoc(doc(db, "books", id), {expected: v});
+    return;
+  }
+  pending = {b, type: d.rec ? "received" : "distributed"};
+  $("#dt").textContent = (d.rec ? "Received: " : "Distributed: ") + b.title;
+  $("#ds").textContent = `${b.cls} · received ${b.received}/${b.expected} · in stock ${b.received - b.distributed}`;
+  $("#qty").value = ""; $("#note").value = "";
+  $("#dlg").showModal();
+};
+$("#cx").onclick = () => $("#dlg").close();
+
+$("#f").onsubmit = async e => {
+  e.preventDefault();
+  const {b, type} = pending, qty = parseInt($("#qty").value, 10);
+  if (!(qty > 0)) return;
+  if (type === "distributed" && qty > b.received - b.distributed) return alert(`Only ${b.received - b.distributed} in stock.`);
+  if (type === "received" && b.received + qty > b.expected && !confirm("This is more than expected. Save anyway?")) return;
+  try {
+    const batch = writeBatch(db);
+    batch.set(doc(collection(db, "entries")), {bookId: b.id, cls: b.cls, title: b.title, type, qty,
+      note: $("#note").value.trim(), by: user.email, at: serverTimestamp()});
+    batch.update(doc(db, "books", b.id), {[type]: increment(qty)});
+    await batch.commit();
+    $("#dlg").close();
+  } catch (err) { alert("Not saved: " + err.message); }
+};
+
+/* ---------- 7. ADMIN: UNDO, STAFF, EXCEL IMPORT ---------- */
+$("#act").onclick = async e => {
+  const id = e.target.dataset.undo; if (!id) return;
+  const en = entries.find(x => x.id === id);
+  if (!confirm(`Undo ${en.type} ${en.qty} for ${en.title}?`)) return;
+  const batch = writeBatch(db);
+  batch.delete(doc(db, "entries", id));
+  batch.update(doc(db, "books", en.bookId), {[en.type]: increment(-en.qty)});
+  await batch.commit();
+};
+
+$("#addStaff").onclick = async () => {
+  const em = $("#se").value.trim().toLowerCase(); if (!em) return;
+  await setDoc(doc(db, "staff", em), {added: serverTimestamp()});
+  $("#se").value = "";
+};
+$("#staff").onclick = async e => {
+  const em = e.target.dataset.rm;
+  if (em && confirm("Remove " + em + "?")) await deleteDoc(doc(db, "staff", em));
+};
+
+const loadXLSX = () => window.XLSX ? Promise.resolve() : new Promise((ok, no) => {
+  const s = document.createElement("script");
+  s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+  s.onload = ok; s.onerror = no; document.head.appendChild(s);
+});
+
+/* ---------- 8. DOWNLOAD EXCEL (same layout as your original sheet) ---------- */
+async function exportExcel() {
+  if (!books.length) { alert("No data to export yet."); return false; }
+  try { await loadXLSX(); } catch (e) { alert("Could not load the Excel tool. Check your internet."); return false; }
+  const pct = (a, b) => b ? a / b : 0;
+  const sum = l => l.reduce((t, b) => ({e: t.e + b.expected, r: t.r + b.received, d: t.d + b.distributed}), {e: 0, r: 0, d: 0});
+  const row = (k, t) => [k, t.e, t.r, Math.max(t.e - t.r, 0), t.d, t.r - t.d, pct(t.d, t.r), pct(t.r, t.e)];
+  const fmt = (ws, cols, from) => {
+    const rg = XLSX.utils.decode_range(ws["!ref"]);
+    for (let i = from; i <= rg.e.r; i++) cols.forEach(c => {
+      const x = ws[XLSX.utils.encode_cell({r: i, c})];
+      if (x && typeof x.v === "number") x.z = "0.0%";
+    });
+  };
+  const classes = [...new Set(books.map(b => b.cls))];
+  const titles = [...new Set(books.map(b => b.title))];
+  const T = sum(books);
+
+  const sSum = XLSX.utils.aoa_to_sheet([
+    ["BOOK SUPPLY & DISTRIBUTION SUMMARY"],
+    ["Total Expected", "Total Received", "Total Distributed", "Stock Remaining", "Distribution %"],
+    [T.e, T.r, T.d, T.r - T.d, pct(T.d, T.r)],
+    ["Class", "Expected", "Received", "Shortfall", "Distributed", "Stock Remaining", "Distribution %", "Receipt %"],
+    ...classes.map(c => row(c, sum(books.filter(b => b.cls === c)))),
+    row("TOTAL", T)
+  ]);
+  sSum["E3"].z = "0.0%"; fmt(sSum, [6, 7], 4);
+
+  const sInv = XLSX.utils.aoa_to_sheet([
+    ["Class", "Book", "Expected", "Received", "Distributed", "Stock Remaining", "Distribution %", "Receipt %", "Shortfall"],
+    ...books.map(b => [b.cls, b.title, b.expected, b.received, b.distributed, b.received - b.distributed,
+      pct(b.distributed, b.received), pct(b.received, b.expected), Math.max(b.expected - b.received, 0)])
+  ]);
+  fmt(sInv, [6, 7], 1);
+
+  const sBook = XLSX.utils.aoa_to_sheet([
+    ["Book", "Expected", "Received", "Shortfall", "Distributed", "Stock Remaining", "Distribution %", "Receipt %"],
+    ...titles.map(t => row(t, sum(books.filter(b => b.title === t))))
+  ]);
+  fmt(sBook, [6, 7], 1);
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sSum, "Summary");
+  XLSX.utils.book_append_sheet(wb, sInv, "Inventory");
+  XLSX.utils.book_append_sheet(wb, sBook, "Book Summary");
+  XLSX.writeFile(wb, `PPS_Book_Distribution_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  return true;
+}
+
+// Admin downloads directly. Staff must ask first; each approval works once.
+$("#dl").onclick = async () => {
+  if (isAdmin()) return exportExcel();
+  if (!canEdit() || mine?.status === "pending") return;
+  try {
+    if (mine?.status === "approved") {
+      if (await exportExcel()) await updateDoc(doc(db, "downloadRequests", mine.id), {status: "used"});
+      return;
+    }
+    await addDoc(collection(db, "downloadRequests"), {email: user.email.toLowerCase(),
+      name: user.displayName || user.email, status: "pending", at: serverTimestamp()});
+  } catch (err) { alert("Failed: " + err.message); }
+};
+
+// Admin: allow or deny a request
+$("#reqs").onclick = async e => {
+  const d = e.target.dataset, id = d.allow || d.deny; if (!id) return;
+  await updateDoc(doc(db, "downloadRequests", id), {status: d.allow ? "approved" : "denied"});
+};
+
+$("#xl").onchange = async e => {
+  const file = e.target.files[0]; if (!file) return;
+  await loadXLSX();
+  const wb = XLSX.read(await file.arrayBuffer());
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets["Inventory"] || wb.Sheets[wb.SheetNames[0]])
+    .filter(r => r.Class && r.Book);
+  if (!rows.length) return alert("No rows found. Need columns: Class, Book, Expected, Received, Distributed.");
+  if (!confirm(`Import ${rows.length} books? This replaces current totals.`)) return;
+  for (let i = 0; i < rows.length; i += 400) {
+    const batch = writeBatch(db);
+    rows.slice(i, i + 400).forEach((r, j) => {
+      const id = `${r.Class}_${r.Book}`.replace(/[^A-Za-z0-9]+/g, "_");
+      batch.set(doc(db, "books", id), {cls: String(r.Class), title: String(r.Book), order: i + j,
+        expected: +r.Expected || 0, received: +r.Received || 0, distributed: +r.Distributed || 0});
+    });
+    await batch.commit();
+  }
+  e.target.value = ""; alert("Import complete.");
+};
+</script>
+</body>
+</html>
