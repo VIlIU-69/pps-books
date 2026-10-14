@@ -45,6 +45,12 @@ summary{font-weight:700;cursor:pointer}
 dialog{border:1px solid var(--bd);border-radius:16px;background:var(--card);color:var(--tx);width:min(92vw,380px);box-shadow:0 20px 50px rgba(0,0,0,.35)}
 dialog::backdrop{background:rgba(15,23,42,.55);backdrop-filter:blur(2px)}
 .li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bd);font-size:13px}
+.sec{font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mu);margin:18px 2px 8px}
+.pill{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:1px 9px;border-radius:99px;background:rgba(255,255,255,.22);margin-left:4px;vertical-align:1px}
+@keyframes up{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.b,.c{animation:up .3s ease both}.b{transition:transform .15s,box-shadow .15s}.b:hover{transform:translateY(-1px)}
+.c span{display:block;margin-top:2px}
+#dt{font-size:17px}
 @media(max-width:420px){#sum{grid-template-columns:repeat(2,1fr)}}
 #printArea{display:none}#printArea table{width:100%;border-collapse:collapse;margin-bottom:14px}#printArea td,#printArea th{border:1px solid #888;padding:4px;text-align:right;font-size:12px}
 @media print{body>*:not(#printArea){display:none!important}#printArea{display:block}body{background:#fff;color:#000}}
@@ -54,30 +60,40 @@ dialog::backdrop{background:rgba(15,23,42,.55);backdrop-filter:blur(2px)}
 <header>
   <div class="brand"><div class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20"/></svg></div>
   <div><h1>School Textbooks Inventory</h1><div class="mu" id="who"></div></div></div>
-  <button class="s" id="auth">Sign in</button>
+  <button class="s" id="auth">🔐 Sign in</button>
 </header>
 <main>
   <div id="reqs"></div>
+  <div class="sec">📊 Overview</div>
   <div id="sum"></div>
   <div id="chips"></div>
-  <div class="row" style="margin:0 0 6px;align-items:center"><button class="s" id="fs">Shortfall</button><button class="s" id="fl">Low stock</button>
-    <span class="mu">low = at most</span><input id="th" type="number" value="10" style="width:64px;padding:5px;margin:0"><button class="s" id="pr">Print report</button></div>
-  <div class="row" style="margin:0"><input id="q" type="search" placeholder="Search book title..."><button class="s" id="dl" hidden>Download Excel</button></div>
+  <div class="row" style="margin:0 0 6px;align-items:center"><button class="s" id="fs">⚠️ Shortfall</button><button class="s" id="fl">📉 Low stock</button>
+    <span class="mu">low = at most</span><input id="th" type="number" value="10" style="width:64px;padding:5px;margin:0"><button class="s" id="pr">🖨️ Print report</button></div>
+  <div class="row" style="margin:0"><input id="q" type="search" placeholder="Search book title..."><button class="s" id="dl" hidden>📥 Download Excel</button></div>
+  <div class="sec">📚 Books</div>
   <div id="list"></div>
 
   <div id="printArea"></div>
-  <details id="activity"><summary>Recent activity</summary><div id="act"></div></details>
+  <details id="stu" open><summary>🎓 Students &amp; book issuing</summary>
+    <div class="row" style="margin-top:8px"><select id="sc" style="font:inherit;padding:9px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx)"></select><button class="s" id="miss">👤 Missing only</button></div>
+    <div id="sl"></div></details>
+  <details id="activity"><summary>🕒 Recent activity</summary><div id="act"></div></details>
 
-  <details id="admin" hidden><summary>Admin tools</summary>
+  <details id="admin" hidden><summary>⚙️ Admin tools</summary>
     <p class="mu">Import books from your Excel sheet (Inventory sheet: Class, Book, Expected, Received, Distributed). This replaces the current totals.</p>
     <input type="file" id="xl" accept=".xlsx">
     <p class="mu" style="margin-top:14px">Add a class or book:</p>
     <input id="nc" placeholder="Class (e.g. N1)"><input id="nb" placeholder="Book title"><input id="ne" type="number" min="0" placeholder="Expected quantity">
-    <button class="s" id="addBook">Add book</button>
+    <button class="s" id="addBook">➕ Add book</button>
+    <p class="mu" style="margin-top:14px">Students: add one to the selected class, or import an Excel sheet (columns: Name, Class).</p>
+    <input id="sn" placeholder="Student name"><button class="s" id="addStu">🧑‍🎓 Add student</button>
+    <input type="file" id="sx" accept=".xlsx">
+    <p class="mu" style="margin-top:14px">End of term: saves a copy of all totals, resets Received and Distributed to 0 (Expected stays) and clears issued books.</p>
+    <button class="s" id="roll">🗂️ Archive term &amp; start new</button>
     <label style="display:block;margin-top:14px"><input type="checkbox" id="priv" style="width:auto;margin:0 6px 0 0">Private mode: only you and approved staff can view</label>
     <p class="mu" style="margin-top:14px">Approved staff (can record entries):</p>
     <input id="se" type="email" placeholder="staff email (Google account)">
-    <button class="s" id="addStaff">Approve staff</button>
+    <button class="s" id="addStaff">✅ Approve staff</button>
     <div id="staff"></div>
   </details>
 </main>
@@ -88,25 +104,25 @@ dialog::backdrop{background:rgba(15,23,42,.55);backdrop-filter:blur(2px)}
     <p class="mu" id="ds"></p>
     <input id="qty" type="number" min="1" inputmode="numeric" placeholder="Quantity" required>
     <input id="note" placeholder="Note (optional, e.g. delivered by ...)">
-    <div class="row"><button type="button" id="cx">Cancel</button><button class="p" type="submit">Save</button></div>
+    <div class="row"><button type="button" id="cx">Cancel</button><button class="p" type="submit">💾 Save</button></div>
   </form>
 </dialog>
 
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {getFirestore,collection,doc,getDoc,setDoc,deleteDoc,updateDoc,onSnapshot,writeBatch,increment,serverTimestamp,query,orderBy,limit,addDoc,where}
+import {getFirestore,collection,doc,getDoc,setDoc,deleteDoc,updateDoc,onSnapshot,writeBatch,increment,serverTimestamp,query,orderBy,limit,addDoc,where,getDocs}
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut}
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 /* ---------- 1. CONNECT TO YOUR FIREBASE PROJECT ---------- */
 const firebaseConfig = {
-  apiKey: "AIzaSyCojSnfBfzLq3i29wjQN9V8iGTz5_fHZ5o",
-  authDomain: "school-textbooks-invento-86342.firebaseapp.com",
-  projectId: "school-textbooks-invento-86342",
-  storageBucket: "school-textbooks-invento-86342.firebasestorage.app",
-  messagingSenderId: "385053275906",
-  appId: "1:385053275906:web:3664716e03e2f9e242f41b"
+  apiKey: "AIzaSyCHQWGO4j4lpr2lHpK-PXyodfL-c5wM8ek",
+  authDomain: "textbooks-collection-data1.firebaseapp.com",
+  projectId: "textbooks-collection-data1",
+  storageBucket: "textbooks-collection-data1.firebasestorage.app",
+  messagingSenderId: "540036270532",
+  appId: "1:540036270532:web:aef94309a6240e3d89bc91"
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -116,7 +132,7 @@ const auth = getAuth(app);
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let user = null, role = "viewer", books = [], entries = [], staff = [], cls = "All", search = "", pending = null;
-let flt = "", priv = false, unsubStaff = null, unsubReq = null, reqs = [], mine = null;
+let students = [], issues = [], missOnly = false, flt = "", priv = false, unsubStaff = null, unsubReq = null, reqs = [], mine = null;
 const canEdit = () => role !== "viewer";
 const isAdmin = () => role === "admin";
 
@@ -175,35 +191,38 @@ function subData() {
     onSnapshot(query(collection(db, "entries"), orderBy("at", "desc"), limit(15)), s => {
       entries = s.docs.map(d => ({id: d.id, ...d.data()}));
       render();
-    }, () => { entries = []; render(); })
+    }, () => { entries = []; render(); }),
+    onSnapshot(collection(db, "students"), s => { students = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a, b) => a.name.localeCompare(b.name)); render(); }, () => { students = []; render(); }),
+    onSnapshot(collection(db, "issues"), s => { issues = s.docs.map(d => ({id: d.id, ...d.data()})); render(); }, () => { issues = []; render(); })
   ];
 }
 onSnapshot(doc(db, "config", "settings"), s => { priv = !!(s.data() || {}).private; render(); }, () => {});
 
 /* ---------- 5. SCREEN ---------- */
 function render() {
-  $("#who").textContent = user ? `${user.displayName || user.email} · ${role}` : "View only";
-  $("#auth").textContent = user ? "Sign out" : "Sign in";
+  $("#who").innerHTML = user ? `${esc(user.displayName || user.email)} <span class="pill">${role}</span>` : "👁️ View only";
+  $("#auth").textContent = user ? "🚪 Sign out" : "🔐 Sign in";
   $("#admin").hidden = !isAdmin();
 
   const dl = $("#dl"), st = mine?.status;
   dl.hidden = !canEdit();
   dl.disabled = !isAdmin() && st === "pending";
-  dl.textContent = isAdmin() ? "Download Excel" : st === "pending" ? "Waiting for approval..."
-    : st === "approved" ? "Download now (approved)" : st === "denied" ? "Denied - request again" : "Request download";
+  dl.textContent = isAdmin() ? "📥 Download Excel" : st === "pending" ? "⏳ Waiting for approval..."
+    : st === "approved" ? "✅ Download now (approved)" : st === "denied" ? "🚫 Denied - request again" : "🔒 Request download";
   $("#reqs").innerHTML = isAdmin() ? reqs.map(r => `<div class="b" style="border-color:var(--ac)"><b>Download request</b>
     <div class="mu">${esc(r.name)} (${esc(r.email)}) wants to download the Excel file.</div>
-    <div class="row"><button class="s p" data-allow="${r.id}">Allow</button><button class="s" data-deny="${r.id}">Deny</button></div></div>`).join("") : "";
+    <div class="row"><button class="s p" data-allow="${r.id}">✅ Allow</button><button class="s" data-deny="${r.id}">❌ Deny</button></div></div>`).join("") : "";
 
   const T = books.reduce((a, b) => ({e: a.e + b.expected, r: a.r + b.received, d: a.d + b.distributed}), {e: 0, r: 0, d: 0});
-  $("#sum").innerHTML = [["Expected", T.e], ["Received", T.r], ["Distributed", T.d], ["In stock", T.r - T.d]]
+  $("#sum").innerHTML = [["📋 Expected", T.e], ["📦 Received", T.r], ["🎒 Distributed", T.d], ["🏷️ In stock", T.r - T.d]]
     .map(([k, v]) => `<div class="c"><b>${v}</b><span>${k}</span></div>`).join("");
 
   const classes = ["All", ...new Set(books.map(b => b.cls))];
-  $("#chips").innerHTML = classes.map(c => `<button data-c="${esc(c)}" class="${c === cls ? "on" : ""}">${esc(c)}</button>`).join("");
+  $("#chips").innerHTML = classes.map(c => `<button data-c="${esc(c)}" class="${c === cls ? "on" : ""}">${c === "All" ? "📚 All" : esc(c)}</button>`).join("");
 
   $("#fs").className = "s" + (flt === "short" ? " p" : ""); $("#fl").className = "s" + (flt === "low" ? " p" : "");
   $("#priv").checked = priv;
+  renderStudents();
   const th = +$("#th").value || 0;
   const shown = books.filter(b => (cls === "All" || b.cls === cls) && b.title.toLowerCase().includes(search) &&
     (flt !== "short" || b.received < b.expected) && (flt !== "low" || (b.received - b.distributed > 0 && b.received - b.distributed <= th)));
@@ -212,9 +231,24 @@ function render() {
 
   $("#act").innerHTML = entries.map(e => `<div class="li"><span>${esc(e.cls)} · ${esc(e.title)}<br>
     <span class="mu">${e.type} ${e.qty} · ${esc(e.by || "")} ${e.note ? "· " + esc(e.note) : ""}</span></span>
-    ${isAdmin() ? `<button class="s" data-undo="${e.id}">Undo</button>` : ""}</div>`).join("") || `<p class="mu">Nothing recorded yet.</p>`;
+    ${isAdmin() ? `<button class="s" data-undo="${e.id}">↩️ Undo</button>` : ""}</div>`).join("") || `<p class="mu">Nothing recorded yet.</p>`;
 
-  $("#staff").innerHTML = staff.map(s => `<div class="li"><span>${esc(s)}</span><button class="s" data-rm="${esc(s)}">Remove</button></div>`).join("");
+  $("#staff").innerHTML = staff.map(s => `<div class="li"><span>${esc(s)}</span><button class="s" data-rm="${esc(s)}">🗑️ Remove</button></div>`).join("");
+}
+
+function renderStudents() {
+  const cl = [...new Set(books.map(b => b.cls))], sc = $("#sc"), cur = sc.value || cl[0] || "";
+  sc.innerHTML = cl.map(c => `<option ${c === cur ? "selected" : ""}>${esc(c)}</option>`).join("");
+  $("#miss").className = "s" + (missOnly ? " p" : "");
+  const cb = books.filter(b => b.cls === sc.value), has = new Set(issues.map(i => i.id));
+  let list = students.filter(x => x.cls === sc.value).map(x => ({x, miss: cb.filter(b => !has.has(x.id + "__" + b.id))}));
+  const all = list.length;
+  if (missOnly) list = list.filter(r => r.miss.length);
+  $("#sl").innerHTML = list.map(({x, miss}) => `<div class="b"><h3>${esc(x.name)}
+    <span class="tag" style="color:${miss.length ? "var(--bad)" : "var(--ok)"}">${cb.length - miss.length}/${cb.length} books</span></h3>
+    <div class="row" style="margin-top:6px">${cb.map(b => { const on = !miss.includes(b);
+      return `<button class="s ${on ? "p" : ""}" data-sid="${x.id}" data-bid="${b.id}">${on ? "✓ " : ""}${esc(b.title)}</button>`; }).join("")}</div></div>`).join("")
+    || `<p class="mu">${all ? "Everyone has all their books." : "No students in this class yet."}</p>`;
 }
 
 function card(b) {
@@ -222,16 +256,67 @@ function card(b) {
   const rp = Math.min(100, b.expected ? b.received / b.expected * 100 : 0);
   const dp = Math.min(100, b.received ? b.distributed / b.received * 100 : 0);
   return `<div class="b"><h3>${esc(b.title)} <span class="tag">${esc(b.cls)}</span>
-    ${short ? '<span class="tag" style="color:var(--bad)">Short</span>' : ""}${stock > 0 && stock <= (+$("#th").value || 0) ? '<span class="tag" style="color:var(--wr)">Low</span>' : ""}</h3>
+    ${short ? '<span class="tag" style="color:var(--bad)">⚠️ Short</span>' : ""}${stock > 0 && stock <= (+$("#th").value || 0) ? '<span class="tag" style="color:var(--wr)">📉 Low</span>' : ""}</h3>
     <div class="mu">Received ${b.received} of ${b.expected}</div>
     <div class="bar"><i style="width:${rp}%;background:${short ? "var(--wr)" : "var(--ok)"}"></i></div>
     <div class="mu">Distributed ${b.distributed} of ${b.received}</div>
     <div class="bar"><i style="width:${dp}%;background:var(--ac)"></i></div>
     <div class="n"><span>Shortfall: <b style="color:${short ? "var(--bad)" : "inherit"}">${short}</b></span><span>In stock: <b>${stock}</b></span></div>
-    ${canEdit() ? `<div class="row"><button class="s p" data-rec="${b.id}">+ Received</button>
-      <button class="s" data-dis="${b.id}">+ Distributed</button>
-      ${isAdmin() ? `<button class="s" data-exp="${b.id}">Edit expected</button>` : ""}</div>` : ""}</div>`;
+    ${canEdit() ? `<div class="row"><button class="s p" data-rec="${b.id}">📦 + Received</button>
+      <button class="s" data-dis="${b.id}">🎒 + Distributed</button>
+      ${isAdmin() ? `<button class="s" data-exp="${b.id}">✏️ Edit expected</button>` : ""}</div>` : ""}</div>`;
 }
+
+$("#sc").onchange = render;
+$("#miss").onclick = () => { missOnly = !missOnly; render(); };
+
+// Tap a book to issue it to a student (admin can take it back)
+$("#sl").onclick = async e => {
+  const d = e.target.closest("button")?.dataset; if (!d || !d.sid || !canEdit()) return;
+  const id = d.sid + "__" + d.bid, b = books.find(x => x.id === d.bid), x = students.find(z => z.id === d.sid);
+  const has = issues.some(i => i.id === id), bt = writeBatch(db);
+  try {
+    if (has) {
+      if (!isAdmin()) return alert("Only the admin can take back an issued book.");
+      if (!confirm(`Take back ${b.title} from ${x.name}?`)) return;
+      bt.delete(doc(db, "issues", id)); bt.update(doc(db, "books", b.id), {distributed: increment(-1)});
+    } else {
+      if (b.received - b.distributed < 1) return alert("None in stock.");
+      bt.set(doc(db, "issues", id), {studentId: x.id, bookId: b.id, cls: b.cls, title: b.title, name: x.name, by: user.email, at: serverTimestamp()});
+      bt.update(doc(db, "books", b.id), {distributed: increment(1)});
+    }
+    await bt.commit();
+  } catch (err) { alert("Not saved: " + err.message); }
+};
+
+$("#addStu").onclick = async () => {
+  const n = $("#sn").value.trim(), c = $("#sc").value; if (!n || !c) return alert("Pick a class and type a name.");
+  await addDoc(collection(db, "students"), {name: n, cls: c}); $("#sn").value = "";
+};
+$("#sx").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return; await loadXLSX();
+  const wb = XLSX.read(await f.arrayBuffer()), rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]).filter(r => r.Name && r.Class);
+  if (!rows.length || !confirm(`Import ${rows.length} students?`)) return alert(rows.length ? "Cancelled." : "Need columns: Name, Class.");
+  for (let i = 0; i < rows.length; i += 400) {
+    const bt = writeBatch(db);
+    rows.slice(i, i + 400).forEach(r => bt.set(doc(db, "students", `${r.Class}_${r.Name}`.replace(/[^A-Za-z0-9]+/g, "_")), {name: String(r.Name), cls: String(r.Class)}));
+    await bt.commit();
+  }
+  e.target.value = ""; alert("Students imported.");
+};
+
+$("#roll").onclick = async () => {
+  const name = prompt("Name this term to archive (e.g. Term 1 2026-27):"); if (!name) return;
+  if (!confirm(`Archive "${name}", reset Received/Distributed to 0 and clear issued books?`)) return;
+  try {
+    await setDoc(doc(db, "archives", name.replace(/\//g, "-")), {name, at: serverTimestamp(),
+      books: books.map(({cls, title, expected, received, distributed}) => ({cls, title, expected, received, distributed}))});
+    const iss = (await getDocs(collection(db, "issues"))).docs;
+    const ops = [...books.map(b => t => t.update(doc(db, "books", b.id), {received: 0, distributed: 0})), ...iss.map(d => t => t.delete(d.ref))];
+    for (let i = 0; i < ops.length; i += 400) { const t = writeBatch(db); ops.slice(i, i + 400).forEach(f => f(t)); await t.commit(); }
+    alert("New term started. The old term is saved as: " + name);
+  } catch (err) { alert("Failed: " + err.message); }
+};
 
 $("#fs").onclick = () => { flt = flt === "short" ? "" : "short"; render(); };
 $("#fl").onclick = () => { flt = flt === "low" ? "" : "low"; render(); };
@@ -277,7 +362,7 @@ $("#list").onclick = async e => {
     return;
   }
   pending = {b, type: d.rec ? "received" : "distributed"};
-  $("#dt").textContent = (d.rec ? "Received: " : "Distributed: ") + b.title;
+  $("#dt").textContent = (d.rec ? "📦 Received: " : "🎒 Distributed: ") + b.title;
   $("#ds").textContent = `${b.cls} · received ${b.received}/${b.expected} · in stock ${b.received - b.distributed}`;
   $("#qty").value = ""; $("#note").value = "";
   $("#dlg").showModal();
