@@ -68,12 +68,11 @@ dialog::backdrop{background:rgba(15,23,42,.55);backdrop-filter:blur(2px)}
   <div id="sum"></div>
   <div id="chips"></div>
   <div class="row" style="margin:0 0 6px;align-items:center"><button class="s" id="fs">⚠️ Shortfall</button><button class="s" id="fl">📉 Low stock</button>
-    <span class="mu">low = at most</span><input id="th" type="number" value="10" style="width:64px;padding:5px;margin:0"><button class="s" id="pr">🖨️ Print report</button></div>
+    <span class="mu">low = at most</span><input id="th" type="number" value="10" style="width:64px;padding:5px;margin:0"><button class="s" id="pr">📄 Print report (PDF)</button></div>
   <div class="row" style="margin:0"><input id="q" type="search" placeholder="Search book title..."><button class="s" id="dl" hidden>📥 Download Excel</button></div>
   <div class="sec">📚 Books</div>
   <div id="list"></div>
 
-  <div id="printArea"></div>
   <details id="stu" open><summary>🎓 Students &amp; book issuing</summary>
     <div class="row" style="margin-top:8px"><select id="sc" style="font:inherit;padding:9px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx)"></select><button class="s" id="miss">👤 Missing only</button></div>
     <div id="sl"></div></details>
@@ -88,7 +87,7 @@ dialog::backdrop{background:rgba(15,23,42,.55);backdrop-filter:blur(2px)}
     <p class="mu" style="margin-top:14px">Students: add one to the selected class, or import an Excel sheet (columns: Name, Class).</p>
     <input id="sn" placeholder="Student name"><button class="s" id="addStu">🧑‍🎓 Add student</button>
     <input type="file" id="sx" accept=".xlsx">
-    <p class="mu" style="margin-top:14px">End of term: saves a copy of all totals, resets Received and Distributed to 0 (Expected stays) and clears issued books.</p>
+    <p class="mu" style="margin-top:14px">End of term: saves a copy of all totals, resets Received and Distributed to 0 (Expected stays) and clears issued books and the activity log.</p>
     <button class="s" id="roll">🗂️ Archive term &amp; start new</button>
     <label style="display:block;margin-top:14px"><input type="checkbox" id="priv" style="width:auto;margin:0 6px 0 0">Private mode: only you and approved staff can view</label>
     <p class="mu" style="margin-top:14px">Approved staff (can record entries):</p>
@@ -97,6 +96,8 @@ dialog::backdrop{background:rgba(15,23,42,.55);backdrop-filter:blur(2px)}
     <div id="staff"></div>
   </details>
 </main>
+
+<div id="printArea"></div>
 
 <dialog id="dlg">
   <form id="f">
@@ -309,11 +310,11 @@ $("#sx").onchange = async e => {
 
 $("#roll").onclick = async () => {
   const name = prompt("Name this term to archive (e.g. Term 1 2026-27):"); if (!name) return;
-  if (!confirm(`Archive "${name}", reset Received/Distributed to 0 and clear issued books?`)) return;
+  if (!confirm(`Archive "${name}", reset Received/Distributed to 0 and clear issued books and the activity log?`)) return;
   try {
     await setDoc(doc(db, "archives", name.replace(/\//g, "-")), {name, at: serverTimestamp(),
       books: books.map(({cls, title, expected, received, distributed}) => ({cls, title, expected, received, distributed}))});
-    const iss = (await getDocs(collection(db, "issues"))).docs;
+    const iss = [...(await getDocs(collection(db, "issues"))).docs, ...(await getDocs(collection(db, "entries"))).docs];
     const ops = [...books.map(b => t => t.update(doc(db, "books", b.id), {received: 0, distributed: 0})), ...iss.map(d => t => t.delete(d.ref))];
     for (let i = 0; i < ops.length; i += 400) { const t = writeBatch(db); ops.slice(i, i + 400).forEach(f => f(t)); await t.commit(); }
     alert("New term started. The old term is saved as: " + name);
@@ -337,17 +338,35 @@ $("#addBook").onclick = async () => {
 };
 $("#priv").onchange = e => setDoc(doc(db, "config", "settings"), {private: e.target.checked}).catch(x => alert(x.message));
 
-$("#pr").onclick = () => {
-  const head = k => `<tr><th style="text-align:left">${k}</th><th>Expected</th><th>Received</th><th>Shortfall</th><th>Distributed</th><th>In stock</th></tr>`;
-  const tr = (k, l) => {
+$("#pr").onclick = async () => {
+  if (!books.length) return alert("No data to report yet.");
+  const load = u => new Promise((ok, no) => { const x = document.createElement("script"); x.src = u; x.onload = ok; x.onerror = no; document.head.appendChild(x); });
+  try {
+    if (!window.jspdf) {
+      await load("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+      await load("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js");
+    }
+  } catch (e) { return alert("Could not load the PDF tool. Check your internet and try again."); }
+  const pdf = new window.jspdf.jsPDF({unit: "pt", format: "a4"});
+  const line = (k, l) => {
     const e = l.reduce((a, b) => a + b.expected, 0), r = l.reduce((a, b) => a + b.received, 0), d = l.reduce((a, b) => a + b.distributed, 0);
-    return `<tr><td style="text-align:left">${esc(k)}</td><td>${e}</td><td>${r}</td><td>${Math.max(e - r, 0)}</td><td>${d}</td><td>${r - d}</td></tr>`;
+    return [k, e, r, Math.max(e - r, 0), d, r - d];
   };
+  const head = k => [[k, "Expected", "Received", "Shortfall", "Distributed", "In stock"]];
+  const right = {1: {halign: "right"}, 2: {halign: "right"}, 3: {halign: "right"}, 4: {halign: "right"}, 5: {halign: "right"}};
   const cl = [...new Set(books.map(b => b.cls))];
-  $("#printArea").innerHTML = `<h2>School Textbooks Report</h2><p>${new Date().toLocaleDateString()}</p>
-    <table>${head("Class")}${cl.map(c => tr(c, books.filter(b => b.cls === c))).join("")}${tr("TOTAL", books)}</table>
-    <h3>Books with a shortfall</h3><table>${head("Class / Book")}${books.filter(b => b.received < b.expected).map(b => tr(b.cls + " · " + b.title, [b])).join("")}</table>`;
-  window.print();
+  pdf.setFontSize(16); pdf.text("School Textbooks Report", 40, 46);
+  pdf.setFontSize(10); pdf.text(new Date().toLocaleDateString(), 40, 62);
+  pdf.autoTable({startY: 76, head: head("Class"), styles: {fontSize: 9}, headStyles: {fillColor: [29, 78, 216]}, columnStyles: right,
+    body: [...cl.map(c => line(c, books.filter(b => b.cls === c))), line("TOTAL", books)],
+    didParseCell: d => { if (d.section === "body" && d.row.index === cl.length) d.cell.styles.fontStyle = "bold"; }});
+  const short = books.filter(b => b.received < b.expected);
+  if (short.length) {
+    pdf.setFontSize(12); pdf.text("Books with a shortfall", 40, pdf.lastAutoTable.finalY + 28);
+    pdf.autoTable({startY: pdf.lastAutoTable.finalY + 36, head: head("Class / Book"), styles: {fontSize: 8}, headStyles: {fillColor: [217, 119, 6]}, columnStyles: right,
+      body: short.map(b => line(b.cls + " - " + b.title, [b]))});
+  }
+  pdf.save(`PPS_Book_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
 };
 
 $("#chips").onclick = e => { const c = e.target.dataset.c; if (c) { cls = c; render(); } };
@@ -396,7 +415,9 @@ $("#f").onsubmit = async e => {
 /* ---------- 7. ADMIN: UNDO, STAFF, EXCEL IMPORT ---------- */
 $("#act").onclick = async e => {
   const id = e.target.dataset.undo; if (!id) return;
-  const en = entries.find(x => x.id === id);
+  const en = entries.find(x => x.id === id), bk = books.find(x => x.id === en.bookId);
+  if (!bk || bk[en.type] - en.qty < 0 || (en.type === "received" && bk.received - en.qty < bk.distributed))
+    return alert("Can't undo this one: it would make the totals inconsistent. Use Set exact total instead.");
   if (!confirm(`Undo ${en.type} ${en.qty} for ${en.title}?`)) return;
   const batch = writeBatch(db);
   batch.delete(doc(db, "entries", id));
