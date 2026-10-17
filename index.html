@@ -243,13 +243,16 @@ function render() {
 }
 
 function renderStudents() {
-  const cl = [...new Set(books.map(b => b.cls))], sc = $("#sc"), cur = sc.value || cl[0] || "";
+  const bo = [...new Set(books.map(b => b.cls))], grp = x => x.stream || x.cls, sm = {};
+  students.forEach(x => { sm[grp(x)] = x.cls; });
+  const cl = Object.keys(sm).sort((a, b) => (bo.indexOf(sm[a]) - bo.indexOf(sm[b])) || a.localeCompare(b));
+  const sc = $("#sc"), cur = sc.value || cl[0] || "";
   sc.innerHTML = cl.map(c => `<option ${c === cur ? "selected" : ""}>${esc(c)}</option>`).join("");
   $("#miss").className = "s" + (missOnly ? " p" : "");
   $("#smode").textContent = confirmOnly ? "✅ Confirm only (totals unchanged)" : "🎒 Issue new (+1 distributed)";
   $("#smode").className = "s" + (confirmOnly ? "" : " p");
-  const cb = books.filter(b => b.cls === sc.value), has = new Set(issues.map(i => i.id));
-  let list = students.filter(x => x.cls === sc.value).map(x => ({x, miss: cb.filter(b => !has.has(x.id + "__" + b.id))}));
+  const cb = books.filter(b => b.cls === sm[sc.value]), has = new Set(issues.map(i => i.id));
+  let list = students.filter(x => grp(x) === sc.value).map(x => ({x, miss: cb.filter(b => !has.has(x.id + "__" + b.id))}));
   const all = list.length;
   if (missOnly) list = list.filter(r => r.miss.length);
   $("#sl").innerHTML = list.map(({x, miss}) => `<div class="b"><h3>${esc(x.name)}
@@ -307,7 +310,8 @@ $("#sl").onclick = async e => {
 
 $("#addStu").onclick = async () => {
   const n = $("#sn").value.trim(), c = $("#sc").value; if (!n || !c) return alert("Pick a class and type a name.");
-  await addDoc(collection(db, "students"), {name: n, cls: c}); $("#sn").value = "";
+  const base = (students.find(x => (x.stream || x.cls) === c) || {}).cls || c;
+  await addDoc(collection(db, "students"), {name: n, cls: base, stream: c}); $("#sn").value = "";
 };
 $("#sx").onchange = async e => {
   const f = e.target.files[0]; if (!f) return; await loadXLSX();
@@ -315,7 +319,10 @@ $("#sx").onchange = async e => {
   if (!rows.length || !confirm(`Import ${rows.length} students?`)) return alert(rows.length ? "Cancelled." : "Need columns: Name, Class.");
   for (let i = 0; i < rows.length; i += 400) {
     const bt = writeBatch(db);
-    rows.slice(i, i + 400).forEach(r => bt.set(doc(db, "students", `${r.Class}_${r.Name}`.replace(/[^A-Za-z0-9]+/g, "_")), {name: String(r.Name), cls: String(r.Class)}));
+    rows.slice(i, i + 400).forEach(r => {
+      const sg = String(r.Stream || r.Class);
+      bt.set(doc(db, "students", `${sg}_${r.Name}`.replace(/[^A-Za-z0-9]+/g, "_")), {name: String(r.Name), cls: String(r.Class), stream: sg});
+    });
     await bt.commit();
   }
   e.target.value = ""; alert("Students imported.");
