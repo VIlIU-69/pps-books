@@ -69,7 +69,7 @@ dialog::backdrop{background:rgba(15,23,42,.55);backdrop-filter:blur(2px)}
   <div id="sum"></div>
   <div id="chips"></div>
   <div class="row" style="margin:0 0 6px;align-items:center"><button class="s" id="fs">⚠️ Shortfall</button><button class="s" id="fl">📉 Low stock</button>
-    <span class="mu">low = at most</span><input id="th" type="number" value="10" style="width:64px;padding:5px;margin:0"><button class="s" id="pr">📄 Print report (PDF)</button></div>
+    <span class="mu">low = at most</span><input id="th" type="number" value="10" style="width:64px;padding:5px;margin:0"><button class="s" id="pr">📦 Books Received (PDF)</button><button class="s" id="pd">🎒 Books Distributed (PDF)</button></div>
   <div class="row" style="margin:0"><input id="q" type="search" placeholder="Search book title..."><button class="s" id="dl" hidden>📥 Download Excel</button></div>
   <div class="sec">📚 Books</div>
   <div id="list"></div>
@@ -358,7 +358,7 @@ $("#addBook").onclick = async () => {
 };
 $("#priv").onchange = e => setDoc(doc(db, "config", "settings"), {private: e.target.checked}).catch(x => alert(x.message));
 
-$("#pr").onclick = async () => {
+async function bookPdf(kind) {   // kind = "received" or "distributed"
   if (!books.length) return alert("No data to report yet.");
   const load = u => new Promise((ok, no) => { const x = document.createElement("script"); x.src = u; x.onload = ok; x.onerror = no; document.head.appendChild(x); });
   try {
@@ -367,27 +367,20 @@ $("#pr").onclick = async () => {
       await load("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js");
     }
   } catch (e) { return alert("Could not load the PDF tool. Check your internet and try again."); }
+  const label = kind === "received" ? "Received" : "Distributed";
   const pdf = new window.jspdf.jsPDF({unit: "pt", format: "a4"});
-  const line = (k, l) => {
-    const e = l.reduce((a, b) => a + b.expected, 0), r = l.reduce((a, b) => a + b.received, 0), d = l.reduce((a, b) => a + b.distributed, 0);
-    return [k, e, r, Math.max(e - r, 0), d, r - d];
-  };
-  const head = k => [[k, "Expected", "Received", "Shortfall", "Distributed", "In stock"]];
-  const right = {1: {halign: "right"}, 2: {halign: "right"}, 3: {halign: "right"}, 4: {halign: "right"}, 5: {halign: "right"}};
-  const cl = [...new Set(books.map(b => b.cls))];
-  pdf.setFontSize(16); pdf.text("School Textbooks Report", 40, 46);
+  const rows = books.map(b => [b.cls, b.title, b[kind]]);
+  const total = books.reduce((a, b) => a + b[kind], 0);
+  pdf.setFontSize(16); pdf.text(`Books ${label}`, 40, 46);
   pdf.setFontSize(10); pdf.text(new Date().toLocaleDateString(), 40, 62);
-  pdf.autoTable({startY: 76, head: head("Class"), styles: {fontSize: 9}, headStyles: {fillColor: [29, 78, 216]}, columnStyles: right,
-    body: [...cl.map(c => line(c, books.filter(b => b.cls === c))), line("TOTAL", books)],
-    didParseCell: d => { if (d.section === "body" && d.row.index === cl.length) d.cell.styles.fontStyle = "bold"; }});
-  const short = books.filter(b => b.received < b.expected);
-  if (short.length) {
-    pdf.setFontSize(12); pdf.text("Books with a shortfall", 40, pdf.lastAutoTable.finalY + 28);
-    pdf.autoTable({startY: pdf.lastAutoTable.finalY + 36, head: head("Class / Book"), styles: {fontSize: 8}, headStyles: {fillColor: [217, 119, 6]}, columnStyles: right,
-      body: short.map(b => line(b.cls + " - " + b.title, [b]))});
-  }
-  pdf.save(`PPS_Book_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
-};
+  pdf.autoTable({startY: 76, head: [["Class", "Name of Textbook", `Number ${label}`]], body: [...rows, ["", "TOTAL", total]],
+    styles: {fontSize: 9}, headStyles: {fillColor: [29, 78, 216]},
+    columnStyles: {0: {cellWidth: 60}, 2: {halign: "right", cellWidth: 110}},
+    didParseCell: d => { if (d.section === "body" && d.row.index === rows.length) d.cell.styles.fontStyle = "bold"; }});
+  pdf.save(`Books_${label}_${new Date().toISOString().slice(0, 10)}.pdf`);
+}
+$("#pr").onclick = () => bookPdf("received");
+$("#pd").onclick = () => bookPdf("distributed");
 
 $("#chips").onclick = e => { const c = e.target.dataset.c; if (c) { cls = c; render(); } };
 $("#q").oninput = e => { search = e.target.value.toLowerCase(); render(); };
